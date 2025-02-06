@@ -27,7 +27,7 @@ func (h *Handler) RegisterDeviceHandler(sctx smart_context.ISmartContext, data m
 	if !ok || deviceID == "" {
 		return nil, fmt.Errorf("device_id is required")
 	}
-	return h.deviceRepo.RegisterDevice(deviceID)
+	return h.deviceRepo.RegisterDevice(sctx, deviceID)
 }
 
 // UpdateHeartbeatHandler обновляет время последнего обновления (heartbeat).
@@ -37,7 +37,7 @@ func (h *Handler) UpdateHeartbeatHandler(sctx smart_context.ISmartContext, data 
 	if !ok || id == "" {
 		return nil, fmt.Errorf("id is required")
 	}
-	return h.deviceRepo.UpdateHeartbeat(id)
+	return h.deviceRepo.UpdateHeartbeat(sctx, id)
 }
 
 // GetDeviceStatusHandler возвращает статус устройства.
@@ -47,7 +47,7 @@ func (h *Handler) GetDeviceStatusHandler(sctx smart_context.ISmartContext, data 
 	if !ok || id == "" {
 		return nil, fmt.Errorf("id is required")
 	}
-	return h.deviceRepo.GetDevice(id)
+	return h.deviceRepo.GetDevice(sctx, id)
 }
 
 // UpdateCameraHandler изменяет состояние камеры устройства.
@@ -73,5 +73,5 @@ func (h *Handler) UpdateCameraHandler(sctx smart_context.ISmartContext, data map
 		}
 	}
 
-	return h.deviceRepo.SetCameraState(id, enabled)
+	return h.deviceRepo.SetCameraState(sctx, id, enabled)
 }

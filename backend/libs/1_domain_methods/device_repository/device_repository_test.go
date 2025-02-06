@@ -1,6 +1,7 @@
 package device_repository
 
 import (
+	"mdm/libs/4_common/smart_context"
 	"testing"
 	"time"
 
@@ -8,12 +9,14 @@ import (
 	"gorm.io/gorm"
 )
 
-func setupTestDB(t *testing.T) *gorm.DB {
+func setupTestDB(t *testing.T) (*gorm.DB, smart_context.ISmartContext) {
 	// Используем in-memory SQLite для тестирования
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("Failed to open in-memory sqlite: %v", err)
 	}
+
+	logger := smart_context.NewSmartContext()
 	// Явное создание таблицы device без дефолтных функций
 	createTableSQL := `
         CREATE TABLE device (
@@ -28,15 +31,15 @@ func setupTestDB(t *testing.T) *gorm.DB {
 	if err := db.Exec(createTableSQL).Error; err != nil {
 		t.Fatalf("Failed to create table: %v", err)
 	}
-	return db
+	return db, logger
 }
 
 func TestRegisterDevice(t *testing.T) {
-	db := setupTestDB(t)
+	db, sctx := setupTestDB(t)
 	repo := NewDeviceRepository(db)
 
 	deviceID := "test-device"
-	device, err := repo.RegisterDevice(deviceID)
+	device, err := repo.RegisterDevice(sctx, deviceID)
 	if err != nil {
 		t.Fatalf("Expected no error on registration, got: %v", err)
 	}
@@ -46,27 +49,27 @@ func TestRegisterDevice(t *testing.T) {
 }
 
 func TestDuplicateRegistration(t *testing.T) {
-	db := setupTestDB(t)
+	db, sctx := setupTestDB(t)
 	repo := NewDeviceRepository(db)
 
 	deviceID := "test-device"
-	_, err := repo.RegisterDevice(deviceID)
+	_, err := repo.RegisterDevice(sctx, deviceID)
 	if err != nil {
 		t.Fatalf("Expected first registration to succeed, got: %v", err)
 	}
 
-	_, err = repo.RegisterDevice(deviceID)
+	_, err = repo.RegisterDevice(sctx, deviceID)
 	if err == nil {
 		t.Errorf("Expected error on duplicate registration, got nil")
 	}
 }
 
 func TestUpdateHeartbeat(t *testing.T) {
-	db := setupTestDB(t)
+	db, sctx := setupTestDB(t)
 	repo := NewDeviceRepository(db)
 
 	deviceID := "test-device"
-	device, err := repo.RegisterDevice(deviceID)
+	device, err := repo.RegisterDevice(sctx, deviceID)
 	if err != nil {
 		t.Fatalf("Registration failed: %v", err)
 	}
@@ -75,7 +78,7 @@ func TestUpdateHeartbeat(t *testing.T) {
 	// Немного подождём, чтобы время изменилось
 	time.Sleep(1 * time.Second)
 
-	updated, err := repo.UpdateHeartbeat(deviceID)
+	updated, err := repo.UpdateHeartbeat(sctx, deviceID)
 	if err != nil {
 		t.Fatalf("UpdateHeartbeat failed: %v", err)
 	}
@@ -85,16 +88,16 @@ func TestUpdateHeartbeat(t *testing.T) {
 }
 
 func TestSetCameraState(t *testing.T) {
-	db := setupTestDB(t)
+	db, sctx := setupTestDB(t)
 	repo := NewDeviceRepository(db)
 
 	deviceID := "test-device"
-	_, err := repo.RegisterDevice(deviceID)
+	_, err := repo.RegisterDevice(sctx, deviceID)
 	if err != nil {
 		t.Fatalf("Registration failed: %v", err)
 	}
 
-	updated, err := repo.SetCameraState(deviceID, true)
+	updated, err := repo.SetCameraState(sctx, deviceID, true)
 	if err != nil {
 		t.Fatalf("SetCameraState failed: %v", err)
 	}
