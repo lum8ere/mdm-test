@@ -1,4 +1,4 @@
-package device_repository
+package repositories
 
 import (
 	"mdm/libs/4_common/smart_context"

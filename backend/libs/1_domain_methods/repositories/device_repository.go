@@ -1,4 +1,4 @@
-package device_repository
+package repositories
 
 import (
 	"errors"
@@ -19,20 +19,21 @@ type DeviceRepository interface {
 	SetBluetoothState(sctx smart_context.ISmartContext, deviceID string, enabled bool) (*model.Device, error)
 	UpdateOsVersion(sctx smart_context.ISmartContext, deviceID string, version string) (*model.Device, error)
 	UpdateBatteryLevel(sctx smart_context.ISmartContext, deviceID string, level int) (*model.Device, error)
+	GetAllDevices(sctx smart_context.ISmartContext) ([]model.Device, error)
 }
 
 // repository — реализация DeviceRepository, использующая GORM.
-type repository struct {
+type device_repository struct {
 	db *gorm.DB
 }
 
 // NewDeviceRepository возвращает новый экземпляр репозитория.
 func NewDeviceRepository(db *gorm.DB) DeviceRepository {
-	return &repository{db: db}
+	return &device_repository{db: db}
 }
 
 // RegisterDevice регистрирует устройство, если оно ещё не зарегистрировано.
-func (r *repository) RegisterDevice(sctx smart_context.ISmartContext, deviceID string) (*model.Device, error) {
+func (r *device_repository) RegisterDevice(sctx smart_context.ISmartContext, deviceID string) (*model.Device, error) {
 	// Проверяем, существует ли уже устройство.
 	var existing model.Device
 	err := r.db.Where("device_id = ?", deviceID).First(&existing).Error
@@ -56,7 +57,7 @@ func (r *repository) RegisterDevice(sctx smart_context.ISmartContext, deviceID s
 }
 
 // GetDevice возвращает данные об устройстве по его DeviceID.
-func (r *repository) GetDevice(sctx smart_context.ISmartContext, deviceID string) (*model.Device, error) {
+func (r *device_repository) GetDevice(sctx smart_context.ISmartContext, deviceID string) (*model.Device, error) {
 	var device model.Device
 	if err := r.db.Where("device_id = ?", deviceID).First(&device).Error; err != nil {
 		return nil, err
@@ -65,7 +66,7 @@ func (r *repository) GetDevice(sctx smart_context.ISmartContext, deviceID string
 }
 
 // UpdateHeartbeat обновляет время последней активности устройства.
-func (r *repository) UpdateHeartbeat(sctx smart_context.ISmartContext, deviceID string) (*model.Device, error) {
+func (r *device_repository) UpdateHeartbeat(sctx smart_context.ISmartContext, deviceID string) (*model.Device, error) {
 	device, err := r.GetDevice(sctx, deviceID)
 	if err != nil {
 		return nil, err
@@ -78,7 +79,7 @@ func (r *repository) UpdateHeartbeat(sctx smart_context.ISmartContext, deviceID 
 }
 
 // SetCameraState изменяет состояние камеры у устройства.
-func (r *repository) SetCameraState(sctx smart_context.ISmartContext, deviceID string, enabled bool) (*model.Device, error) {
+func (r *device_repository) SetCameraState(sctx smart_context.ISmartContext, deviceID string, enabled bool) (*model.Device, error) {
 	device, err := r.GetDevice(sctx, deviceID)
 	if err != nil {
 		return nil, err
@@ -90,7 +91,7 @@ func (r *repository) SetCameraState(sctx smart_context.ISmartContext, deviceID s
 	return device, nil
 }
 
-func (r *repository) SetMicrophoneState(sctx smart_context.ISmartContext, deviceID string, enabled bool) (*model.Device, error) {
+func (r *device_repository) SetMicrophoneState(sctx smart_context.ISmartContext, deviceID string, enabled bool) (*model.Device, error) {
 	device, err := r.GetDevice(sctx, deviceID)
 	if err != nil {
 		return nil, err
@@ -102,7 +103,7 @@ func (r *repository) SetMicrophoneState(sctx smart_context.ISmartContext, device
 	return device, nil
 }
 
-func (r *repository) SetBluetoothState(sctx smart_context.ISmartContext, deviceID string, enabled bool) (*model.Device, error) {
+func (r *device_repository) SetBluetoothState(sctx smart_context.ISmartContext, deviceID string, enabled bool) (*model.Device, error) {
 	device, err := r.GetDevice(sctx, deviceID)
 	if err != nil {
 		return nil, err
@@ -114,7 +115,7 @@ func (r *repository) SetBluetoothState(sctx smart_context.ISmartContext, deviceI
 	return device, nil
 }
 
-func (r *repository) UpdateOsVersion(sctx smart_context.ISmartContext, deviceID string, version string) (*model.Device, error) {
+func (r *device_repository) UpdateOsVersion(sctx smart_context.ISmartContext, deviceID string, version string) (*model.Device, error) {
 	device, err := r.GetDevice(sctx, deviceID)
 	if err != nil {
 		return nil, err
@@ -126,7 +127,7 @@ func (r *repository) UpdateOsVersion(sctx smart_context.ISmartContext, deviceID 
 	return device, nil
 }
 
-func (r *repository) UpdateBatteryLevel(sctx smart_context.ISmartContext, deviceID string, level int) (*model.Device, error) {
+func (r *device_repository) UpdateBatteryLevel(sctx smart_context.ISmartContext, deviceID string, level int) (*model.Device, error) {
 	device, err := r.GetDevice(sctx, deviceID)
 	if err != nil {
 		return nil, err
@@ -136,4 +137,14 @@ func (r *repository) UpdateBatteryLevel(sctx smart_context.ISmartContext, device
 		return nil, err
 	}
 	return device, nil
+}
+
+func (r *device_repository) GetAllDevices(sctx smart_context.ISmartContext) ([]model.Device, error) {
+	var devices []model.Device
+	if err := r.db.Find(&devices).Error; err != nil {
+		return nil, err
+	}
+
+	sctx.Infof("len(devices) = %d", len(devices))
+	return devices, nil
 }

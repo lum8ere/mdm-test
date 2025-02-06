@@ -1,10 +1,11 @@
 package main
 
 import (
-	"mdm/libs/1_domain_methods/device_repository"
 	"mdm/libs/1_domain_methods/handlers"
+	"mdm/libs/1_domain_methods/repositories"
 	"mdm/libs/1_domain_methods/run_processor"
 	"mdm/libs/3_infrastructure/db_manager"
+	"mdm/libs/4_common/auth"
 	"mdm/libs/4_common/env_vars"
 	"mdm/libs/4_common/smart_context"
 	"net/http"
@@ -29,9 +30,15 @@ func main() {
 	logger = logger.WithDB(dbm.GetGORM())
 
 	// Инициализация репозитория устройств
-	deviceRepo := device_repository.NewDeviceRepository(logger.GetDB())
+	deviceRepo := repositories.NewDeviceRepository(logger.GetDB())
+	userRepo := repositories.NewUserRepository(logger.GetDB())
 	// Создаем хендлеры
-	h := handlers.NewHandler(deviceRepo)
+	h := handlers.NewHandler(deviceRepo, userRepo)
+
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		jwtSecret = "default-secret"
+	}
 
 	r := chi.NewRouter()
 
@@ -48,16 +55,30 @@ func main() {
 	}))
 
 	// Регистрируем маршруты, используя обёртку JSONResponseMiddleware.
-	// Обратите внимание: для параметра пути используем "{id}" (чтобы middleware мог извлечь его).
 	r.Post("/devices/register", run_processor.JSONResponseMiddleware(logger, h.RegisterDeviceHandler))
 	r.Post("/devices/{id}/heartbeat", run_processor.JSONResponseMiddleware(logger, h.UpdateHeartbeatHandler))
 	r.Get("/devices/{id}/status", run_processor.JSONResponseMiddleware(logger, h.GetDeviceStatusHandler))
-	r.Post("/devices/{id}/camera", run_processor.JSONResponseMiddleware(logger, h.UpdateCameraHandler))
 
-	r.Post("/devices/{id}/microphone", run_processor.JSONResponseMiddleware(logger, h.UpdateMicrophoneHandler))
-	r.Post("/devices/{id}/bluetooth", run_processor.JSONResponseMiddleware(logger, h.UpdateBluetoothHandler))
-	r.Post("/devices/{id}/os", run_processor.JSONResponseMiddleware(logger, h.UpdateOsVersionHandler))
-	r.Post("/devices/{id}/battery", run_processor.JSONResponseMiddleware(logger, h.UpdateBatteryLevelHandler))
+	// Эндпоинт для логина (публичный, для получения JWT-токена)
+	r.Post("/login", run_processor.JSONResponseMiddleware(logger, h.LoginHandler))
+
+	r.Group(func(r chi.Router) {
+		r.Use(func(next http.Handler) http.Handler {
+			return auth.JWTMiddleware(next, logger)
+		})
+		// Получение списка всех устройств
+		r.Get("/devices", run_processor.JSONResponseMiddleware(logger, h.GetAllDevicesHandler))
+		r.Post("/devices/{id}/camera", run_processor.JSONResponseMiddleware(logger, h.UpdateCameraHandler))
+		r.Post("/devices/{id}/microphone", run_processor.JSONResponseMiddleware(logger, h.UpdateMicrophoneHandler))
+		r.Post("/devices/{id}/bluetooth", run_processor.JSONResponseMiddleware(logger, h.UpdateBluetoothHandler))
+		r.Post("/devices/{id}/os", run_processor.JSONResponseMiddleware(logger, h.UpdateOsVersionHandler))
+		r.Post("/devices/{id}/battery", run_processor.JSONResponseMiddleware(logger, h.UpdateBatteryLevelHandler))
+	})
+
+	// r.Post("/devices/{id}/microphone", run_processor.JSONResponseMiddleware(logger, h.UpdateMicrophoneHandler))
+	// r.Post("/devices/{id}/bluetooth", run_processor.JSONResponseMiddleware(logger, h.UpdateBluetoothHandler))
+	// r.Post("/devices/{id}/os", run_processor.JSONResponseMiddleware(logger, h.UpdateOsVersionHandler))
+	// r.Post("/devices/{id}/battery", run_processor.JSONResponseMiddleware(logger, h.UpdateBatteryLevelHandler))
 
 	logger.Info("Server listening on port 4000")
 	err = http.ListenAndServe(":4000", r)

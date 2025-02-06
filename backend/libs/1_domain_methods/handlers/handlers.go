@@ -3,20 +3,27 @@ package handlers
 import (
 	"fmt"
 	"strconv"
+	"time"
 
-	"mdm/libs/1_domain_methods/device_repository"
+	"mdm/libs/1_domain_methods/repositories"
+	"mdm/libs/4_common/auth"
 	"mdm/libs/4_common/smart_context"
+
+	"github.com/golang-jwt/jwt/v4"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // Handler содержит зависимости для работы с устройствами.
 type Handler struct {
-	deviceRepo device_repository.DeviceRepository
+	deviceRepo repositories.DeviceRepository
+	userRepo   repositories.UserRepository
 }
 
 // NewHandler создаёт новый экземпляр Handler.
-func NewHandler(repo device_repository.DeviceRepository) *Handler {
+func NewHandler(repo repositories.DeviceRepository, userRepo repositories.UserRepository) *Handler {
 	return &Handler{
 		deviceRepo: repo,
+		userRepo:   userRepo,
 	}
 }
 
@@ -140,4 +147,39 @@ func (h *Handler) UpdateBatteryLevelHandler(sctx smart_context.ISmartContext, da
 		return nil, fmt.Errorf("battery_level is required and must be a number")
 	}
 	return h.deviceRepo.UpdateBatteryLevel(sctx, id, int(levelVal))
+}
+
+// Ожидается JSON: { "username": "...", "password": "..." }
+func (h *Handler) LoginHandler(sctx smart_context.ISmartContext, data map[string]interface{}) (interface{}, error) {
+	username, ok1 := data["username"].(string)
+	password, ok2 := data["password"].(string)
+	if !ok1 || !ok2 || username == "" || password == "" {
+		return nil, fmt.Errorf("username and password are required")
+	}
+
+	user, err := h.userRepo.GetByUsername(username)
+	if err != nil {
+		return nil, fmt.Errorf("invalid credentials")
+	}
+
+	// Сравнение захешированного пароля
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+		return nil, fmt.Errorf("invalid credentials")
+	}
+
+	// Генерируем JWT-токен с информацией о пользователе
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"username": username,
+		"role":     user.Role,
+		"exp":      time.Now().Add(24 * time.Hour).Unix(),
+	})
+	tokenString, err := token.SignedString(auth.JWTSecret)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]string{"token": tokenString}, nil
+}
+
+func (h *Handler) GetAllDevicesHandler(sctx smart_context.ISmartContext, data map[string]interface{}) (interface{}, error) {
+	return h.deviceRepo.GetAllDevices(sctx)
 }
