@@ -30,6 +30,10 @@ func newDevice(db *gorm.DB, opts ...gen.DOOption) device {
 	_device.ID = field.NewString(tableName, "id")
 	_device.DeviceID = field.NewString(tableName, "device_id")
 	_device.CameraEnabled = field.NewBool(tableName, "camera_enabled")
+	_device.MicrophoneEnabled = field.NewBool(tableName, "microphone_enabled")
+	_device.BluetoothEnabled = field.NewBool(tableName, "bluetooth_enabled")
+	_device.OsVersion = field.NewString(tableName, "os_version")
+	_device.BatteryLevel = field.NewInt32(tableName, "battery_level")
 	_device.LastHeartbeat = field.NewTime(tableName, "last_heartbeat")
 	_device.CreatedAt = field.NewTime(tableName, "created_at")
 	_device.UpdatedAt = field.NewTime(tableName, "updated_at")
@@ -42,13 +46,17 @@ func newDevice(db *gorm.DB, opts ...gen.DOOption) device {
 type device struct {
 	deviceDo
 
-	ALL           field.Asterisk
-	ID            field.String
-	DeviceID      field.String
-	CameraEnabled field.Bool
-	LastHeartbeat field.Time
-	CreatedAt     field.Time
-	UpdatedAt     field.Time
+	ALL               field.Asterisk
+	ID                field.String
+	DeviceID          field.String
+	CameraEnabled     field.Bool
+	MicrophoneEnabled field.Bool
+	BluetoothEnabled  field.Bool
+	OsVersion         field.String
+	BatteryLevel      field.Int32
+	LastHeartbeat     field.Time
+	CreatedAt         field.Time
+	UpdatedAt         field.Time
 
 	fieldMap map[string]field.Expr
 }
@@ -68,6 +76,10 @@ func (d *device) updateTableName(table string) *device {
 	d.ID = field.NewString(table, "id")
 	d.DeviceID = field.NewString(table, "device_id")
 	d.CameraEnabled = field.NewBool(table, "camera_enabled")
+	d.MicrophoneEnabled = field.NewBool(table, "microphone_enabled")
+	d.BluetoothEnabled = field.NewBool(table, "bluetooth_enabled")
+	d.OsVersion = field.NewString(table, "os_version")
+	d.BatteryLevel = field.NewInt32(table, "battery_level")
 	d.LastHeartbeat = field.NewTime(table, "last_heartbeat")
 	d.CreatedAt = field.NewTime(table, "created_at")
 	d.UpdatedAt = field.NewTime(table, "updated_at")
@@ -87,10 +99,14 @@ func (d *device) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (d *device) fillFieldMap() {
-	d.fieldMap = make(map[string]field.Expr, 6)
+	d.fieldMap = make(map[string]field.Expr, 10)
 	d.fieldMap["id"] = d.ID
 	d.fieldMap["device_id"] = d.DeviceID
 	d.fieldMap["camera_enabled"] = d.CameraEnabled
+	d.fieldMap["microphone_enabled"] = d.MicrophoneEnabled
+	d.fieldMap["bluetooth_enabled"] = d.BluetoothEnabled
+	d.fieldMap["os_version"] = d.OsVersion
+	d.fieldMap["battery_level"] = d.BatteryLevel
 	d.fieldMap["last_heartbeat"] = d.LastHeartbeat
 	d.fieldMap["created_at"] = d.CreatedAt
 	d.fieldMap["updated_at"] = d.UpdatedAt

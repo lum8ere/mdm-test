@@ -15,6 +15,10 @@ type DeviceRepository interface {
 	GetDevice(sctx smart_context.ISmartContext, deviceID string) (*model.Device, error)
 	UpdateHeartbeat(sctx smart_context.ISmartContext, deviceID string) (*model.Device, error)
 	SetCameraState(sctx smart_context.ISmartContext, deviceID string, enabled bool) (*model.Device, error)
+	SetMicrophoneState(sctx smart_context.ISmartContext, deviceID string, enabled bool) (*model.Device, error)
+	SetBluetoothState(sctx smart_context.ISmartContext, deviceID string, enabled bool) (*model.Device, error)
+	UpdateOsVersion(sctx smart_context.ISmartContext, deviceID string, version string) (*model.Device, error)
+	UpdateBatteryLevel(sctx smart_context.ISmartContext, deviceID string, level int) (*model.Device, error)
 }
 
 // repository — реализация DeviceRepository, использующая GORM.
@@ -80,6 +84,54 @@ func (r *repository) SetCameraState(sctx smart_context.ISmartContext, deviceID s
 		return nil, err
 	}
 	device.CameraEnabled = enabled
+	if err := r.db.Save(device).Error; err != nil {
+		return nil, err
+	}
+	return device, nil
+}
+
+func (r *repository) SetMicrophoneState(sctx smart_context.ISmartContext, deviceID string, enabled bool) (*model.Device, error) {
+	device, err := r.GetDevice(sctx, deviceID)
+	if err != nil {
+		return nil, err
+	}
+	device.MicrophoneEnabled = enabled
+	if err := r.db.Save(device).Error; err != nil {
+		return nil, err
+	}
+	return device, nil
+}
+
+func (r *repository) SetBluetoothState(sctx smart_context.ISmartContext, deviceID string, enabled bool) (*model.Device, error) {
+	device, err := r.GetDevice(sctx, deviceID)
+	if err != nil {
+		return nil, err
+	}
+	device.BluetoothEnabled = enabled
+	if err := r.db.Save(device).Error; err != nil {
+		return nil, err
+	}
+	return device, nil
+}
+
+func (r *repository) UpdateOsVersion(sctx smart_context.ISmartContext, deviceID string, version string) (*model.Device, error) {
+	device, err := r.GetDevice(sctx, deviceID)
+	if err != nil {
+		return nil, err
+	}
+	device.OsVersion = version
+	if err := r.db.Save(device).Error; err != nil {
+		return nil, err
+	}
+	return device, nil
+}
+
+func (r *repository) UpdateBatteryLevel(sctx smart_context.ISmartContext, deviceID string, level int) (*model.Device, error) {
+	device, err := r.GetDevice(sctx, deviceID)
+	if err != nil {
+		return nil, err
+	}
+	device.BatteryLevel = int32(level)
 	if err := r.db.Save(device).Error; err != nil {
 		return nil, err
 	}

@@ -54,6 +54,11 @@ func main() {
 	r.Get("/devices/{id}/status", run_processor.JSONResponseMiddleware(logger, h.GetDeviceStatusHandler))
 	r.Post("/devices/{id}/camera", run_processor.JSONResponseMiddleware(logger, h.UpdateCameraHandler))
 
+	r.Post("/devices/{id}/microphone", run_processor.JSONResponseMiddleware(logger, h.UpdateMicrophoneHandler))
+	r.Post("/devices/{id}/bluetooth", run_processor.JSONResponseMiddleware(logger, h.UpdateBluetoothHandler))
+	r.Post("/devices/{id}/os", run_processor.JSONResponseMiddleware(logger, h.UpdateOsVersionHandler))
+	r.Post("/devices/{id}/battery", run_processor.JSONResponseMiddleware(logger, h.UpdateBatteryLevelHandler))
+
 	logger.Info("Server listening on port 4000")
 	err = http.ListenAndServe(":4000", r)
 	logger.Fatal(err)

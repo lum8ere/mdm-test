@@ -12,12 +12,16 @@ const TableNameDevice = "device"
 
 // Device mapped from table <device>
 type Device struct {
-	ID            string    `gorm:"column:id;primaryKey;default:gen_random_uuid()" json:"id"`
-	DeviceID      string    `gorm:"column:device_id;not null" json:"device_id"`
-	CameraEnabled bool      `gorm:"column:camera_enabled;not null" json:"camera_enabled"`
-	LastHeartbeat time.Time `gorm:"column:last_heartbeat" json:"last_heartbeat"`
-	CreatedAt     time.Time `gorm:"column:created_at;default:now()" json:"created_at"`
-	UpdatedAt     time.Time `gorm:"column:updated_at" json:"updated_at"`
+	ID                string    `gorm:"column:id;primaryKey;default:gen_random_uuid()" json:"id"`
+	DeviceID          string    `gorm:"column:device_id;not null" json:"device_id"`
+	CameraEnabled     bool      `gorm:"column:camera_enabled;not null" json:"camera_enabled"`
+	MicrophoneEnabled bool      `gorm:"column:microphone_enabled;not null" json:"microphone_enabled"`
+	BluetoothEnabled  bool      `gorm:"column:bluetooth_enabled;not null" json:"bluetooth_enabled"`
+	OsVersion         string    `gorm:"column:os_version" json:"os_version"`
+	BatteryLevel      int32     `gorm:"column:battery_level" json:"battery_level"`
+	LastHeartbeat     time.Time `gorm:"column:last_heartbeat" json:"last_heartbeat"`
+	CreatedAt         time.Time `gorm:"column:created_at;default:now()" json:"created_at"`
+	UpdatedAt         time.Time `gorm:"column:updated_at" json:"updated_at"`
 }
 
 // TableName Device's table name
