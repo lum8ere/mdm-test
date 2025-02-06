@@ -7,7 +7,6 @@ import (
 	"mdm/libs/4_common/smart_context"
 
 	"github.com/golang-jwt/jwt/v4"
-	"go.uber.org/zap"
 )
 
 var JWTSecret = []byte("your-secret") // по умолчанию, замените на значение из ENV
@@ -35,7 +34,7 @@ func JWTMiddleware(next http.Handler, sctx smart_context.ISmartContext) http.Han
 			return JWTSecret, nil
 		})
 		if err != nil || !token.Valid {
-			sctx.GetLogger().Error("Invalid JWT token", zap.Error(err))
+			sctx.Errorf("Invalid JWT token", err)
 			http.Error(w, "Invalid token", http.StatusUnauthorized)
 			return
 		}
